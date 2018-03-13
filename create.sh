@@ -4,7 +4,9 @@
 #  WebCrawler
 #
 #  Created by Harry Wright on 08/03/2018.
-#  
+#
+
+rm Package.resolved
 
 echo "Building WebCrawler"
 swift build -c release -Xswiftc -static-stdlib
