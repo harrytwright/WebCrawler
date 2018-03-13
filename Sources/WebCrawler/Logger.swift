@@ -23,13 +23,20 @@ internal struct Logger {
         if #available(OSX 10.12, *) {
             let fmt: StaticString = type.showFunctionInfo ? "[%@:%@:%lu] %@" : "%@"
 
-            let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "WebCrawler", category: "Networking")
+            let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "WebCrawler", category: "Spider")
             if type.showFunctionInfo {
                 os_log(fmt, log: log, type: type.os_log_type, (file as NSString).lastPathComponent, fn, line, msg)
             } else {
                 os_log(fmt, log: log, type: type.os_log_type, msg)
             }
-        } else { fatalError("Invalid OS") }
+        } else {
+            let fmt: String = type.showFunctionInfo ? "[%@:%@:%lu] %@" : "%@"
+            if type.showFunctionInfo {
+                NSLog(fmt, (file as NSString).lastPathComponent, fn, line, msg)
+            } else {
+                NSLog(fmt, msg)
+            }
+        }
 
         if ProcessInfo.processInfo.environment["WCXcode"] != nil { return }
 
