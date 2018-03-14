@@ -138,11 +138,12 @@ extension Crawler {
 
                 guard let links = parsedPage.links() else { return }
 
-                let urls = links
-                    .map { _Link(base: strongSelf.startURL, href: $0)}
-                    .map { $0.buildValidURL(with: strongSelf.configuration.rules) }
-                    .filter { $0 != nil }
-                    .flatMap { $0! }
+                var urls: [URL] = []
+                for link in links {
+                    let _link = _Link(base: strongSelf.startURL, href: link)
+                    guard let url = _link.buildValidURL(with: strongSelf.configuration.rules) else { continue }
+                    urls.append(url)
+                }
 
                 for url in urls where !strongSelf.pagesVisited.contains(url) {
                     strongSelf.pagesToVisit.insert(url)
@@ -371,8 +372,8 @@ extension Crawler.Configuration.Rules: Equatable {
 }
 
 extension String {
-    func containsIgnoringCase(_ find: String) -> Bool{
-        return self.range(of: find, options: .caseInsensitive) != nil
+    func contains(_ find: String, options: String.CompareOptions) -> Bool {
+        return self.range(of: find, options: options) != nil
     }
 }
 
@@ -384,13 +385,13 @@ extension Array where Element == String {
         var currentUserAgent: String?
         var currentPaths: [String] = []
         for value in self {
-            if value.containsIgnoringCase("User-Agent:") {
+            if value.contains("User-Agent:", options: .caseInsensitive) {
                 if let userAgent = currentUserAgent {
                     dict.updateValue(currentPaths, forKey: userAgent);
                     currentPaths.removeAll()
                 }
                 currentUserAgent = value
-            } else if value.containsIgnoringCase("Disallow:") {
+            } else if value.contains("Disallow:", options: .caseInsensitive) {
                 currentPaths.append(value)
             }
         }
@@ -400,9 +401,7 @@ extension Array where Element == String {
 
 enum DisallowType {
     case anyQuery(key: String)
-
     case valuedQuery(key: String, value: String)
-
     case path(String)
 
     init(_ value: String) {
@@ -412,10 +411,9 @@ enum DisallowType {
             while newValue.hasPrefix("/") { newValue.removeFirst() }
 
             let values = newValue.components(separatedBy: "=")
-            var key = values[0]
-            let value = values[1]
+            var key = values[0]; let value = values[1]
 
-            if key.hasPrefix("*") { key.remove(at: key.startIndex) }
+            if key.hasPrefix("*") { key.removeFirst() }
             if value == "*" {
                 self = .anyQuery(key: key)
             } else {
